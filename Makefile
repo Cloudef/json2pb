@@ -1,18 +1,19 @@
-CPPFLAGS = -g -fPIC -I.
+CPPFLAGS = -std=c++11 -g -fPIC -I.
 LDFLAGS = -Wl,-rpath -Wl,.
 
-all: libjson2pb.so test_json
+all: libjson2pb.so json2pb pb2json
 
 clean:
-	-rm -f *.o *.so *.a libjson2pb.so.* test
-
-test_json: test_json.o test.pb.o libjson2pb.so -lprotobuf
-test_json.o: test.pb.h
-
-json2pb.o: bin2ascii.h
+	-rm -f *.o *.so *.a libjson2pb.so.* json2pb pb2json
 
 libjson2pb.so: json2pb.o
-	$(CC) $(LDFLAGS) -o $@ $^ -Wl,-soname=$@ -Wl,-h -Wl,$@ -shared -L. -lcurl -lprotobuf -lstdc++ -ljansson
+	$(CXX) $(LDFLAGS) -o $@ $^ -Wl,-soname=$@ -Wl,-h -Wl,$@ -shared -lcurl -lprotobuf -ljansson
 
-test.pb.h test.pb.cc: test.proto
-	protoc --cpp_out=$(shell pwd) test.proto
+%.o: %.cc
+	$(CXX) -o $@ -c $^ $(CPPFLAGS)
+
+json2pb: json2pb_cli.o libjson2pb.so
+	$(CXX) -o $@ $^ $(CPPFLAGS) $(LDFLAGS)
+
+pb2json: pb2json_cli.o libjson2pb.so
+	$(CXX) -o $@ $^ $(CPPFLAGS) $(LDFLAGS)
