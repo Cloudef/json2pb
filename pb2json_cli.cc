@@ -13,15 +13,28 @@ static std::string remove_ext(const std::string &fname)
     return (d == std::string::npos ? fname : fname.substr(0, d));
 }
 
+static std::string base(const std::string &fname)
+{
+    const auto d = fname.find_last_of("/");
+    return (d == std::string::npos ? fname : fname.substr(d + 1));
+}
+
+static std::string dir(const std::string &fname)
+{
+    const auto d = fname.find_last_of("/");
+    return (d == std::string::npos ? "." : fname.substr(0, d));
+}
+
 int main(int argc, char *argv[])
 {
         if (argc < 4) {
-                std::cerr << "usage: " << std::string(basename(argv[0])) << " MESSAGE PROTO PROTOBUF" << std::endl;
+                std::cerr << "usage: " << base(std::string(argv[0])) << " MESSAGE PROTO PROTOBUF" << std::endl;
                 return EXIT_FAILURE;
         }
 
 	std::string msg(argv[1]);
-	std::string proto(argv[2]);
+	std::string proto(base(argv[2]));
+	std::string protodir(dir(argv[2]));
 	std::string blob(argv[3]);
 
 	std::string code = R"(
@@ -68,8 +81,8 @@ int main(int argc, char *argv[])
 	out << code;
 	out.close();
 
-	system(std::string("protoc --cpp_out=" + tmp + " " + proto).c_str());
-        system(std::string("c++ -std=c++11 -I. " + parser + " " + src + " -o " + binary + " -lprotobuf -Wl,-rpath,. -L. -ljson2pb").c_str());
+	system(std::string("(cd '" + protodir + "'; protoc --cpp_out=" + tmp + " " + proto + ")").c_str());
+        system(std::string("c++ -std=c++11 -I. -I" + tmp + " " + parser + " " + src + " -o " + binary + " -lprotobuf -Wl,-rpath,. -L. -ljson2pb").c_str());
 	remove(parser.c_str());
 	remove(src.c_str());
 	remove(hdr.c_str());
